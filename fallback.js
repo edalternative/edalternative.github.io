@@ -351,6 +351,7 @@ window.CV_FALLBACK = {
    "publisher": "TEMPO.wev",
    "url": "",
    "cover": "",
+   "images": "",
    "summary_th": "แทนที่ด้วยคำโปรยบรรทัดเดียว",
    "summary_en": "Replace this with a one-line description.",
    "body_th": "นี่คือข้อความตัวอย่างสำหรับดูหน้าอ่าน ให้แทนที่ด้วยตอนตัดของงานเขียนจริงของคุณ\n\nขึ้นย่อหน้าใหม่ด้วยการเว้นบรรทัดว่าง และใส่ *ตัวเอียง* **ตัวหนา** [ลิงก์](https://example.com) ลงในเซลล์ได้เลย",
@@ -369,6 +370,7 @@ window.CV_FALLBACK = {
    "publisher": "TEMPO.wev",
    "url": "",
    "cover": "",
+   "images": "",
    "summary_th": "แทนที่ด้วยคำโปรยบรรทัดเดียว",
    "summary_en": "Replace this with a one-line description.",
    "body_th": "นี่คือข้อความตัวอย่างสำหรับดูหน้าอ่าน ให้แทนที่ด้วยตอนตัดของงานเขียนจริงของคุณ\n\nขึ้นย่อหน้าใหม่ด้วยการเว้นบรรทัดว่าง และใส่ *ตัวเอียง* **ตัวหนา** [ลิงก์](https://example.com) ลงในเซลล์ได้เลย",
@@ -387,12 +389,30 @@ window.CV_FALLBACK = {
    "publisher": "TEMPO.wev",
    "url": "",
    "cover": "",
+   "images": "",
    "summary_th": "แทนที่ด้วยคำโปรยบรรทัดเดียว",
    "summary_en": "Replace this with a one-line description.",
    "body_th": "นี่คือข้อความตัวอย่างสำหรับดูหน้าอ่าน ให้แทนที่ด้วยตอนตัดของงานเขียนจริงของคุณ\n\nขึ้นย่อหน้าใหม่ด้วยการเว้นบรรทัดว่าง และใส่ *ตัวเอียง* **ตัวหนา** [ลิงก์](https://example.com) ลงในเซลล์ได้เลย",
    "body_en": "This is sample text so you can see how a reading page looks. Replace it with an excerpt of your own piece.\n\nParagraphs are separated by a blank line. You can write *italics*, **bold**, and [links](https://example.com) right in the cell.",
    "web": "yes",
    "print": "no"
+  }
+ ],
+ "categories": [
+  {
+   "category": "interview",
+   "label_th": "สัมภาษณ์",
+   "label_en": "Interview"
+  },
+  {
+   "category": "news",
+   "label_th": "ข่าว",
+   "label_en": "News"
+  },
+  {
+   "category": "article",
+   "label_th": "บทความ",
+   "label_en": "Article"
   }
  ]
 };

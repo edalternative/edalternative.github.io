@@ -32,10 +32,10 @@
     }
   };
   var ROUTES = ['about', 'works', 'experience', 'education', 'contact', 'cv'];
-  var TABS = ['profile', 'details', 'contact', 'experience', 'education', 'skills', 'works'];
+  var TABS = ['profile', 'details', 'contact', 'experience', 'education', 'skills', 'works', 'categories'];
   var REQUIRED = {
     profile: ['key', 'en'], details: ['key', 'value_en'], contact: ['key', 'value_en'], experience: ['org_en', 'start'],
-    education: ['school_en', 'degree_en'], skills: ['name_en', 'group_en'], works: ['title_en', 'category']
+    education: ['school_en', 'degree_en'], skills: ['name_en', 'group_en'], works: ['title_en', 'category'], categories: ['category', 'label_en']
   };
   var CACHE_KEY = 'cv-cache-v1';
 
@@ -90,6 +90,20 @@
   function esc(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  // Google Drive share links (file/d/ID/view, open?id=ID, uc?id=ID) become direct image links.
+  function driveId(u) {
+    var m = /^https?:\/\/(?:drive|docs)\.google\.com\/(?:file\/d\/|open\?(?:[^#]*&)?id=|uc\?(?:[^#]*&)?id=|thumbnail\?(?:[^#]*&)?id=)([A-Za-z0-9_-]{10,})/i.exec(u);
+    return m ? m[1] : '';
+  }
+  function imageUrl(u) {
+    u = String(u || '').trim();
+    var id = driveId(u);
+    return id ? 'https://drive.google.com/thumbnail?id=' + id + '&sz=w1600' : safeUrl(u);
+  }
+  function imageList(v) {
+    return String(v || '').split(/[\s,;]+/).map(imageUrl).filter(Boolean);
   }
 
   function safeUrl(u) {
@@ -237,9 +251,9 @@
   }
 
   var lib = {
-    parseCSV: parseCSV, rowsToObjects: rowsToObjects, hasHeaders: hasHeaders, flag: flag, esc: esc, safeUrl: safeUrl, inline: inline,
+    parseCSV: parseCSV, rowsToObjects: rowsToObjects, hasHeaders: hasHeaders, flag: flag, esc: esc, safeUrl: safeUrl, imageUrl: imageUrl, imageList: imageList, inline: inline,
     paragraphs: paragraphs, parseMonth: parseMonth, fmtMonth: fmtMonth, fmtRange: fmtRange, sortByDate: sortByDate, calcAge: calcAge,
-    fmtDob: fmtDob, pick: pick, fillTokens: fillTokens, hubHTML: hubHTML, parseRoute: parseRoute, slug: slug, T: T
+    fmtDob: fmtDob, pick: pick, catLabel: catLabel, orderCats: orderCats, fillTokens: fillTokens, hubHTML: hubHTML, parseRoute: parseRoute, slug: slug, T: T
   };
   if (typeof module !== 'undefined' && module.exports) { module.exports = lib; }
   if (typeof document === 'undefined') return;
@@ -341,7 +355,21 @@
 
   function photoSrc(c) { return safeUrl(c.p.photo) || 'assets/portrait.jpg'; }
 
-  function catLabel(c, cat) { return c.t.cat[String(cat).toLowerCase()] || cat; }
+  // Optional "categories" tab: names a category in both languages and sets the order of the filter buttons.
+  function catRow(c, cat) {
+    var k = String(cat).toLowerCase(), rows = (c.d && c.d.categories) || [];
+    for (var i = 0; i < rows.length; i++) { if (String(rows[i].category || '').trim().toLowerCase() === k) return rows[i]; }
+    return null;
+  }
+  function catLabel(c, cat) {
+    var r = catRow(c, cat), fromTab = r ? pick(r, 'label', c.lang) : '';
+    return fromTab || c.t.cat[String(cat).toLowerCase()] || cat;
+  }
+  function orderCats(c, cats) {
+    var known = ((c.d && c.d.categories) || []).map(function (r) { return String(r.category || '').trim().toLowerCase(); });
+    return cats.map(function (k, i) { var at = known.indexOf(k); return { k: k, o: at === -1 ? known.length + i : at }; })
+      .sort(function (a, b) { return a.o - b.o; }).map(function (x) { return x.k; });
+  }
 
   function tagHTML(text) { return text ? '<span class="tag">' + esc(text) + '</span>' : ''; }
 
@@ -364,6 +392,7 @@
     var rows = visible(c.d.works, 'web').map(function (r, i) { r._id = workId(r, i); return r; });
     var cats = [];
     rows.forEach(function (r) { var k = String(r.category || '').toLowerCase(); if (k && cats.indexOf(k) === -1) cats.push(k); });
+    cats = orderCats(c, cats);
     if (state.filter !== 'all' && cats.indexOf(state.filter) === -1) state.filter = 'all';
     var h = '<h1 id="sheet-title" class="display">' + esc(c.t.works) + '</h1>';
     if (!rows.length) return { title: c.t.works, html: h + '<p class="empty">' + esc(c.t.empty) + '</p>' };
@@ -403,12 +432,13 @@
   }
 
   function readSection(c, r) {
-    var url = safeUrl(r.url), cover = safeUrl(r.cover), sum = pick(r, 'summary', c.lang), body = pick(r, 'body', c.lang);
+    var url = safeUrl(r.url), cover = imageUrl(r.cover), pics = imageList(r.images), sum = pick(r, 'summary', c.lang), body = pick(r, 'body', c.lang);
     var meta = [r.year, r.publisher].filter(Boolean).map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('');
     var h = '<article class="read"><p class="work-meta">' + tagHTML(catLabel(c, r.category)) + meta + '</p>' +
       '<h1 id="sheet-title" class="display">' + esc(pick(r, 'title', c.lang)) + '</h1>' +
       (sum ? '<p class="read-sum">' + esc(sum) + '</p>' : '') +
-      (cover ? '<img class="read-cover" src="' + esc(cover) + '" alt="">' : '') +
+      (cover ? '<img class="read-cover" src="' + esc(cover) + '" alt="" referrerpolicy="no-referrer">' : '') +
+      pics.map(function (src) { return '<img class="read-pic" src="' + esc(src) + '" alt="" loading="lazy" referrerpolicy="no-referrer">'; }).join('') +
       (body ? '<div class="read-body">' + paragraphs(body) + '</div>' : '') +
       (url ? '<p><a class="btn" href="' + esc(url) + '"' + linkAttrs(url) + '>' + esc(c.t.readOriginal) + '</a></p>' : '') + '</article>';
     return { title: pick(r, 'title', c.lang), html: h };
