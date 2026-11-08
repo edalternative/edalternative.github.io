@@ -228,6 +228,20 @@
 
   function slug(s) { return String(s || '').toLowerCase().replace(/[^a-z0-9-_]+/g, '-').replace(/^-+|-+$/g, ''); }
 
+  // Newest first: sorts by the optional "date" column (YYYY, YYYY-MM or YYYY-MM-DD), else "year".
+  // Same date (or no date): the row lower in the sheet comes first, so new rows added at the bottom show on top.
+  function dateKey(r) {
+    var m = /(\d{4})(?:[-\/](\d{1,2}))?(?:[-\/](\d{1,2}))?/.exec(String(r.date || r.year || ''));
+    if (!m) return 0;
+    var y = +m[1]; if (y > 2400) y -= 543;
+    return y * 10000 + (+m[2] || 0) * 100 + (+m[3] || 0);
+  }
+  function newestFirst(rows) {
+    return rows.map(function (r, i) { return { r: r, i: i, k: dateKey(r) }; })
+      .sort(function (a, b) { return b.k - a.k || b.i - a.i; })
+      .map(function (x) { return x.r; });
+  }
+
   function workId(row, i) { return slug(row.id) || 'w' + (i + 1); }
 
   // [[route|label]] becomes a link; everything else is escaped plain text
@@ -253,7 +267,7 @@
   var lib = {
     parseCSV: parseCSV, rowsToObjects: rowsToObjects, hasHeaders: hasHeaders, flag: flag, esc: esc, safeUrl: safeUrl, imageUrl: imageUrl, imageList: imageList, inline: inline,
     paragraphs: paragraphs, parseMonth: parseMonth, fmtMonth: fmtMonth, fmtRange: fmtRange, sortByDate: sortByDate, calcAge: calcAge,
-    fmtDob: fmtDob, pick: pick, catLabel: catLabel, orderCats: orderCats, fillTokens: fillTokens, hubHTML: hubHTML, parseRoute: parseRoute, slug: slug, T: T
+    fmtDob: fmtDob, pick: pick, dateKey: dateKey, newestFirst: newestFirst, catLabel: catLabel, orderCats: orderCats, fillTokens: fillTokens, hubHTML: hubHTML, parseRoute: parseRoute, slug: slug, T: T
   };
   if (typeof module !== 'undefined' && module.exports) { module.exports = lib; }
   if (typeof document === 'undefined') return;
@@ -389,7 +403,7 @@
   }
 
   function worksSection(c) {
-    var rows = visible(c.d.works, 'web').map(function (r, i) { r._id = workId(r, i); return r; });
+    var rows = newestFirst(visible(c.d.works, 'web').map(function (r, i) { r._id = workId(r, i); return r; }));
     var cats = [];
     rows.forEach(function (r) { var k = String(r.category || '').toLowerCase(); if (k && cats.indexOf(k) === -1) cats.push(k); });
     cats = orderCats(c, cats);
@@ -505,7 +519,7 @@
     var skills = skillGroups(c, 'print');
     var exp = sortByDate(visible(c.d.experience, 'print'));
     var edu = sortByDate(visible(c.d.education, 'print'));
-    var works = visible(c.d.works, 'print');
+    var works = newestFirst(visible(c.d.works, 'print'));
     var site = /^https?:/.test(root.location.protocol) ? root.location.origin + root.location.pathname.replace(/index\.html$/, '') : '';
     var left = '';
     if (contact.length || site) {
